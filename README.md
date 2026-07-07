@@ -27,6 +27,14 @@ after first download do:
 - User login functionality to save personal watch lists
 - Graphical user interface with two-column layout for easy navigation
 
+## Architecture Notes
+
+The application uses a multi-threaded design to keep the GUI responsive during network I/O:
+- A dedicated background thread continuously downloads movie poster images from a mutex-protected queue, woken via a condition variable only when new work is queued
+- Separate worker threads handle movie search and detail-fetch API calls asynchronously, so the ImGui render loop never blocks waiting on the OMDb API
+- Shared state accessed by multiple threads (watch list, movie cache, image texture map) is synchronized via `std::mutex`, with `std::atomic` flags used for lightweight cross-thread status signaling (search/fetch in progress, thread shutdown)
+- Threads are properly joined before reassignment and cleanly shut down on application exit
+
 ## Dependencies
 - GLFW
 - Dear ImGui
